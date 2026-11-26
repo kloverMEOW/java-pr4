@@ -2,6 +2,7 @@ package ua.dut.threads;
 
 import ua.dut.orders.model.Order;
 import ua.dut.orders.model.Product;
+import ua.dut.orders.processing.OrderHandler;
 import ua.dut.orders.processing.OrderProcessingException;
 import ua.dut.orders.processing.OrderProcessor;
 import ua.dut.storage.OrderStorage;
@@ -28,24 +29,27 @@ public class OrderService {
                                                          OrderProcessor<T> processor,
                                                          OrderStorage<T> storage,
                                                          Consumer<String> log) {
+        // посилання на метод обробки замовлення
+        OrderHandler<T> handler = processor::process;
         List<Future<?>> futures = new ArrayList<>();
-        for (Order<T> order : orders) {
-            futures.add(executor.submit(() -> {
-                try {
-                    String line = processor.process(order);
-                    storage.save(order);
-                    ok.incrementAndGet();
-                    log.accept(line);
-                } catch (OrderProcessingException e) {
-                    failed.incrementAndGet();
-                    String msg = "помилка в замовленні #" + e.getOrder().getId() + ": " + e.getMessage();
-                    storage.saveError(msg);
-                    log.accept("[" + Thread.currentThread().getName() + "] " + msg);
-                }
-                sleepQuietly(50);
-            }));
-        }
+        orders.forEach(order -> futures.add(executor.submit(() -> handle(order, handler, storage, log))));
         return futures;
+    }
+
+    private <T extends Product> void handle(Order<T> order, OrderHandler<T> handler,
+                                            OrderStorage<T> storage, Consumer<String> log) {
+        try {
+            String line = handler.handle(order);
+            storage.save(order);
+            ok.incrementAndGet();
+            log.accept(line);
+        } catch (OrderProcessingException e) {
+            failed.incrementAndGet();
+            String msg = "помилка в замовленні #" + e.getOrder().getId() + ": " + e.getMessage();
+            storage.saveError(msg);
+            log.accept("[" + Thread.currentThread().getName() + "] " + msg);
+        }
+        sleepQuietly(50);
     }
 
     private static void sleepQuietly(long ms) {
