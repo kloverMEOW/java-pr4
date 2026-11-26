@@ -1,10 +1,11 @@
 package ua.dut.orders.model;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class Product {
     private final String id;
     private final String name;

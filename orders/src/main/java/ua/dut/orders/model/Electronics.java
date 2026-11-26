@@ -1,13 +1,20 @@
 package ua.dut.orders.model;
 
+import lombok.Builder;
 import lombok.Getter;
-import lombok.experimental.SuperBuilder;
 
 @Getter
-@SuperBuilder
 public class Electronics extends Product {
     private final String brand;
     private final int warrantyMonths;
+
+    // @Builder на конструкторі, щоб у білдері були і поля з Product
+    @Builder
+    public Electronics(String id, String name, double price, String brand, int warrantyMonths) {
+        super(id, name, price);
+        this.brand = brand;
+        this.warrantyMonths = warrantyMonths;
+    }
 
     @Override
     public String category() {
